@@ -8,7 +8,10 @@ const port = process.env.PORT || 5000;
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      "http://localhost:5173",
+      "https://iridescent-torrone-faf218.netlify.app",
+    ],
   })
 );
 
@@ -31,31 +34,51 @@ async function run() {
     const taskCollection = client.db("taskDB").collection("tasks");
 
     // to create task
+
     app.post("/create-task", async (req, res) => {
       const task = req.body;
       const result = await taskCollection.insertOne(task);
       res.send(result);
     });
+
+    // get an user's tasks
+
     app.get("/tasks", async (req, res) => {
-      const email = req.query.email; 
+      const email = req.query.email;
       const query = { userEmail: email };
       const result = await taskCollection.find(query).toArray();
       res.send(result);
     });
 
+    // to change task status
+
+    app.patch("/update/:id", async (req, res) => {
+      const id = req.params.id;
+      const { status } = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const update = {
+        $set: {
+          status: status,
+        },
+      };
+      const result = await taskCollection.updateOne(filter, update);
+      res.send(result);
+    });
+
     // to delete a task
+
     app.delete("/delete/:id", async (req, res) => {
-        const id = req.params.id;
-        const query = { _id: new ObjectId(id) };
-        const result = await taskCollection.deleteOne(query);
-        res.send(result);
-      });
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await taskCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
